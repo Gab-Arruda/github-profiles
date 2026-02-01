@@ -1,9 +1,10 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import OfflineModal from '../components/OfflineModal';
 
 export default function Profile() {
   const { username } = useParams();
+  const [searchParams] = useSearchParams();
+  const isOfflineMode = searchParams.get('offline') === 'true';
   const [userData, setUserData] = useState(null);
   const [reposData, setReposData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,94 +12,96 @@ export default function Profile() {
   const [page, setPage] = useState(1);
   const reposPerPage = 6;
   const [sortBy, setSortBy] = useState('name-asc');
-  const [showOfflineModal, setShowOfflineModal] = useState(false);
+
+  const fetchProfileFromGitHub = async (username) => {
+    const userResponse = await fetch(`https://api.github.com/users/${username}`);
+    if (!userResponse.ok) {
+      throw new Error('Usuário não encontrado');
+    }
+    const userData = await userResponse.json();
+
+    const reposResponse = await fetch(userData.repos_url);
+    if (!reposResponse.ok) {
+      throw new Error('Erro ao buscar repositórios');
+    }
+    const reposData = await reposResponse.json();
+    
+    const savedProfile = saveProfileToOfflineStorage(userData, reposData);
+    setUserData(savedProfile);
+    setReposData(savedProfile.repositories);
+  };
+
+  const handleRefreshProfile = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await fetchProfileFromGitHub(username);
+    } catch (err) {
+      console.error('Erro ao atualizar perfil:', err);
+      setError('Erro ao atualizar perfil.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
       setLoading(true);
       setError(null);
       try {
-        const savedProfiles = JSON.parse(localStorage.getItem('offlineProfiles') || '[]');
-        const savedProfileData = savedProfiles.find(profile => profile.login === username);
-
-        if (savedProfileData?.repositories) {
-          setUserData(savedProfileData);
-          setReposData(savedProfileData.repositories);
-          setLoading(false);
-          return;
+        
+        if (isOfflineMode) {
+          const savedProfiles = JSON.parse(localStorage.getItem('offlineProfiles') || '[]');
+          const savedProfileData = savedProfiles.find(profile => profile.login === username);
+          if (savedProfileData?.repositories) {
+            setUserData(savedProfileData);
+            setReposData(savedProfileData.repositories);
+            setLoading(false);
+            return;
+          } else {
+            throw new Error('Perfil não encontrado entre os visualizados');
+          }
         }
 
-        const userResponse = await fetch(`https://api.github.com/users/${username}`);
-        if (!userResponse.ok) {
-          throw new Error('Usuário não encontrado');
-        }
-        const userData = await userResponse.json();
-        setUserData(userData);
-
-        const reposResponse = await fetch(userData.repos_url);
-        if (!reposResponse.ok) {
-          throw new Error('Erro ao buscar repositórios');
-        }
-        const reposData = await reposResponse.json();
-        setReposData(reposData);
+        await fetchProfileFromGitHub(username);
       } catch (err) {
         console.error('Erro ao buscar perfil:', err);
-        if (err instanceof TypeError) {
-          setShowOfflineModal(true);
-        }
-        setError(err.message);
+        setError('Erro ao buscar perfil');
       } finally {
         setLoading(false);
       }
     };
 
-    const handleOnline = () => {
-      setShowOfflineModal(false);
-    };
-
-    const handleOffline = () => {
-      setShowOfflineModal(true);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
     fetchProfile();
+  }, [username, isOfflineMode]);
 
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+  const saveProfileToOfflineStorage = (profileData, repositories) => {
+    const savedProfiles = JSON.parse(localStorage.getItem('offlineProfiles') || '[]');
+    const existingIndex = savedProfiles.findIndex(profile => profile.login === profileData.login);
+    
+    const profileToSave = {
+      login: profileData.login,
+      avatar_url: profileData.avatar_url,
+      name: profileData.name,
+      bio: profileData.bio,
+      followers: profileData.followers,
+      following: profileData.following,
+      public_repos: profileData.public_repos,
+      location: profileData.location,
+      viewedAt: new Date().toISOString(),
+      repositories
     };
-  }, [username]);
-
-  useEffect(() => {
-    if (userData) {
-      const savedProfiles = JSON.parse(localStorage.getItem('offlineProfiles') || '[]');
-      
-      const existingIndex = savedProfiles.findIndex(profile => profile.login === userData.login);
-      
-      const profileToSave = {
-        login: userData.login,
-        avatar_url: userData.avatar_url,
-        name: userData.name,
-        bio: userData.bio,
-        followers: userData.followers,
-        following: userData.following,
-        public_repos: userData.public_repos,
-        location: userData.location,
-        viewedAt: new Date().toISOString(),
-        repositories: reposData
-      };
-      
-      if (existingIndex === -1) {
-        savedProfiles.unshift(profileToSave);
-      } else {
-        savedProfiles[existingIndex] = profileToSave;
-      }
-      
-      localStorage.setItem('offlineProfiles', JSON.stringify(savedProfiles));
+    
+    if (existingIndex === -1) {
+      savedProfiles.unshift(profileToSave);
+    } else {
+      savedProfiles[existingIndex] = profileToSave;
     }
-  }, [userData, reposData]);
+    
+    localStorage.setItem('offlineProfiles', JSON.stringify(savedProfiles));
+    
+    return profileToSave;
+  };
 
   const totalStars = reposData.reduce((acc, repo) => acc + repo.stargazers_count, 0);
 
@@ -142,7 +145,6 @@ export default function Profile() {
 
   return (
     <main className="px-6 py-6">
-      <OfflineModal isOpen={showOfflineModal} onClose={() => setShowOfflineModal(false)} />
       <div>
         {loading && (
           <div className="flex justify-center items-center py-12">
@@ -156,7 +158,7 @@ export default function Profile() {
           </div>
         )}
 
-        {userData && !loading && (
+        {!error && userData && !loading && (
           <div className="max-w-4xl mx-auto">
             <div className="flex flex-col md:flex-row gap-8 md:items-start items-center">
               <img
@@ -168,6 +170,21 @@ export default function Profile() {
               <div className="flex-1 text-center md:text-left">
                 <h1 className="text-4xl font-bold mb-2">{userData.name || userData.login}</h1>
                 <p className="text-xl text-slate-500 mb-4">@{userData.login}</p>
+                
+                {isOfflineMode && userData.viewedAt && (
+                  <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-md">
+                    <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-yellow-800">
+                      <span>📅 Perfil visto em: {new Date(userData.viewedAt).toLocaleString('pt-BR')}</span>
+                      <span className="text-slate-400">•</span>
+                      <span 
+                        onClick={handleRefreshProfile}
+                        className="text-blue-700 hover:text-blue-900 underline cursor-pointer font-medium"
+                      >
+                        buscar dados mais recentes
+                      </span>
+                    </div>
+                  </div>
+                )}
                 
                 {userData.bio && (
                   <p className="text-xl text-slate-300 mb-6">{userData.bio}</p>

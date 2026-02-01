@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom'
 
-export default function ProfileList({ items }) {
+export default function ProfileList({ items, isOffline = false }) {
   return (
     <ul className="flex flex-col items-center gap-4">
       {items?.map((item) => (
         <li key={item.login} className="w-full max-w-sm">
           <Link
-            to={`/profile/${item.login}`}
+            to={`/profile/${item.login}${isOffline ? '?offline=true' : ''}`}
             className="flex items-center gap-4 rounded-lg border border-slate-500 bg-slate-200 p-4 shadow-sm transition-colors hover:bg-slate-300"
           >
             <img

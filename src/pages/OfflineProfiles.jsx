@@ -38,7 +38,7 @@ export default function OfflineProfiles() {
             <p className="text-slate-300">
               {profiles.length} {profiles.length === 1 ? 'perfil visitado' : 'perfis visitados'}
             </p>
-            <ProfileList items={paginatedProfiles} />
+            <ProfileList items={paginatedProfiles} isOffline={true} />
             
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-4 mt-8">

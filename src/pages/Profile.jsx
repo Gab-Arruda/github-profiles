@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import OfflineModal from '../components/OfflineModal';
 
 export default function Profile() {
   const { username } = useParams();
@@ -10,6 +11,7 @@ export default function Profile() {
   const [page, setPage] = useState(1);
   const reposPerPage = 6;
   const [sortBy, setSortBy] = useState('name-asc');
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -19,7 +21,7 @@ export default function Profile() {
         const savedProfiles = JSON.parse(localStorage.getItem('offlineProfiles') || '[]');
         const savedProfileData = savedProfiles.find(profile => profile.login === username);
 
-        if (savedProfileData && savedProfileData.repositories) {
+        if (savedProfileData?.repositories) {
           setUserData(savedProfileData);
           setReposData(savedProfileData.repositories);
           setLoading(false);
@@ -41,13 +43,32 @@ export default function Profile() {
         setReposData(reposData);
       } catch (err) {
         console.error('Erro ao buscar perfil:', err);
+        if (err instanceof TypeError) {
+          setShowOfflineModal(true);
+        }
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
+    const handleOnline = () => {
+      setShowOfflineModal(false);
+    };
+
+    const handleOffline = () => {
+      setShowOfflineModal(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     fetchProfile();
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, [username]);
 
   useEffect(() => {
@@ -121,6 +142,7 @@ export default function Profile() {
 
   return (
     <main className="px-6 py-6">
+      <OfflineModal isOpen={showOfflineModal} onClose={() => setShowOfflineModal(false)} />
       <div>
         {loading && (
           <div className="flex justify-center items-center py-12">

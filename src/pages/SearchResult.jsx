@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import ProfileList from '../components/ProfileList'
+import OfflineModal from '../components/OfflineModal'
 
 export default function Search() {
   const { username } = useParams()
@@ -9,6 +10,7 @@ export default function Search() {
   const [error, setError] = useState(null)
   const [page, setPage] = useState(1)
   const itemsPerPage = 5
+  const [showOfflineModal, setShowOfflineModal] = useState(false)
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -27,13 +29,32 @@ export default function Search() {
         setResults(data)
       } catch (err) {
         console.error('Erro ao buscar usuários:', err)
+        if (err instanceof TypeError) {
+          setShowOfflineModal(true)
+        }
         setError('Erro ao buscar usuários. Tente novamente.')
       } finally {
         setLoading(false)
       }
     }
 
+    const handleOnline = () => {
+      setShowOfflineModal(false)
+    }
+
+    const handleOffline = () => {
+      setShowOfflineModal(true)
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
     fetchResults()
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
   }, [username, page])
 
   const handleNextPage = () => {
@@ -52,6 +73,7 @@ export default function Search() {
 
   return (
     <main className="px-6 py-6">
+      <OfflineModal isOpen={showOfflineModal} onClose={() => setShowOfflineModal(false)} />
       <div>
         <h3 className="text-3xl font-bold mb-6">Resultados para: {username}</h3>
         

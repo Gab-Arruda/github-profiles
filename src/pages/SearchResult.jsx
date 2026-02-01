@@ -65,14 +65,14 @@ export default function Search() {
     <main className="px-6 py-6">
       <OfflineModal isOpen={isOffline} onClose={() => setIsOffline(false)} />
       <div>
-        <h3 className="text-3xl font-bold mb-6">Resultados para: {username}</h3>
-        
         {loading && (
           <div className="flex justify-center items-center py-12">
-            <p className="text-xl text-slate-300">Buscando...</p>
+            <p className="text-xl text-slate-300">Buscando perfis...</p>
           </div>
         )}
         
+        <h3 className="text-3xl font-bold mb-6">Resultados para: {username}</h3>
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}

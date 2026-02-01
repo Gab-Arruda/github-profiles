@@ -10,6 +10,8 @@ export default function Profile() {
   const [page, setPage] = useState(1);
   const reposPerPage = 6;
   const [sortBy, setSortBy] = useState('name-asc');
+  const [isFromLocalStorage, setIsFromLocalStorage] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -19,9 +21,10 @@ export default function Profile() {
         const savedProfiles = JSON.parse(localStorage.getItem('offlineProfiles') || '[]');
         const savedProfileData = savedProfiles.find(profile => profile.login === username);
 
-        if (savedProfileData && savedProfileData.repositories) {
+        if (savedProfileData?.repositories) {
           setUserData(savedProfileData);
           setReposData(savedProfileData.repositories);
+          setIsFromLocalStorage(true);
           setLoading(false);
           return;
         }
@@ -39,6 +42,7 @@ export default function Profile() {
         }
         const reposData = await reposResponse.json();
         setReposData(reposData);
+        setIsFromLocalStorage(false);
       } catch (err) {
         console.error('Erro ao buscar perfil:', err);
         setError(err.message);
@@ -84,6 +88,32 @@ export default function Profile() {
   const handleSortChange = (e) => {
     setSortBy(e.target.value);
     setPage(1);
+  };
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    setError(null);
+    try {
+      const userResponse = await fetch(`https://api.github.com/users/${username}`);
+      if (!userResponse.ok) {
+        throw new Error('Usuário não encontrado');
+      }
+      const userData = await userResponse.json();
+      setUserData(userData);
+
+      const reposResponse = await fetch(userData.repos_url);
+      if (!reposResponse.ok) {
+        throw new Error('Erro ao buscar repositórios');
+      }
+      const reposData = await reposResponse.json();
+      setReposData(reposData);
+      setIsFromLocalStorage(false);
+    } catch (err) {
+      console.error('Erro ao atualizar perfil:', err);
+      setError(err.message);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const sortedRepos = [...reposData].sort((a, b) => {
@@ -136,6 +166,22 @@ export default function Profile() {
 
         {userData && !loading && (
           <div className="max-w-4xl mx-auto">
+            {isFromLocalStorage && (
+              <div className="mb-6 p-4 bg-blue-100 border border-blue-400 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="text-blue-700">
+                  <p className="font-semibold">ℹ️ Dados em cache</p>
+                  <p className="text-sm">Você está visualizando dados vistos previamente. Clique em "Atualizar" para buscar os dados mais recentes.</p>
+                </div>
+                <button
+                  onClick={handleRefreshData}
+                  disabled={isRefreshing}
+                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium whitespace-nowrap"
+                >
+                  {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+                </button>
+              </div>
+            )}
+            
             <div className="flex flex-col md:flex-row gap-8 md:items-start items-center">
               <img
                 src={userData.avatar_url}

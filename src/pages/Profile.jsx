@@ -10,7 +10,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const reposPerPage = 6;
+  const reposPerPage = 5;
   const [sortBy, setSortBy] = useState('name-asc');
 
   const fetchProfileFromGitHub = async (username) => {
@@ -127,12 +127,10 @@ export default function Profile() {
 
   const handleNextPage = () => {
     setPage((prevPage) => prevPage + 1);
-    window.scrollTo(0, 0);
   };
 
   const handlePreviousPage = () => {
     setPage((prevPage) => Math.max(1, prevPage - 1));
-    window.scrollTo(0, 0);
   };
 
   const totalPages = Math.ceil(reposData.length / reposPerPage);
@@ -272,7 +270,7 @@ export default function Profile() {
                   ))}
                 </div>
 
-                <div className="flex justify-center items-center gap-4 mt-8">
+                <div className="flex justify-center items-center gap-3 mt-8">
                   <button
                     onClick={handlePreviousPage}
                     disabled={!hasPreviousPage}

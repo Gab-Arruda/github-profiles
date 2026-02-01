@@ -1,5 +1,6 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import OfflineModal from '../components/OfflineModal';
 
 export default function Profile() {
   const { username } = useParams();
@@ -12,6 +13,7 @@ export default function Profile() {
   const [page, setPage] = useState(1);
   const reposPerPage = 5;
   const [sortBy, setSortBy] = useState('name-asc');
+  const [isOffline, setIsOffline] = useState(false);
 
   const fetchProfileFromGitHub = async (username) => {
     const userResponse = await fetch(`https://api.github.com/users/${username}`);
@@ -29,6 +31,7 @@ export default function Profile() {
     const savedProfile = saveProfileToOfflineStorage(userData, reposData);
     setUserData(savedProfile);
     setReposData(savedProfile.repositories);
+    setIsOffline(false);
   };
 
   const handleRefreshProfile = async () => {
@@ -37,8 +40,12 @@ export default function Profile() {
     try {
       await fetchProfileFromGitHub(username);
     } catch (err) {
+      if (!window.navigator.onLine || err.name === 'TypeError') {
+        setIsOffline(true);
+      } else {
+        setError('Erro ao atualizar perfil');
+      }
       console.error('Erro ao atualizar perfil:', err);
-      setError('Erro ao atualizar perfil.');
     } finally {
       setLoading(false);
     }
@@ -63,10 +70,20 @@ export default function Profile() {
           }
         }
 
+        if (!window.navigator.onLine) {
+          setIsOffline(true);
+          setLoading(false);
+          return;
+        }
+
         await fetchProfileFromGitHub(username);
       } catch (err) {
+        if (!window.navigator.onLine || err.name === 'TypeError') {
+          setIsOffline(true);
+        } else {
+          setError('Erro ao buscar perfil');
+        }
         console.error('Erro ao buscar perfil:', err);
-        setError('Erro ao buscar perfil');
       } finally {
         setLoading(false);
       }
@@ -143,6 +160,7 @@ export default function Profile() {
 
   return (
     <main className="px-6 py-6">
+      <OfflineModal isOpen={isOffline} onClose={() => setIsOffline(false)} />
       <div>
         {loading && (
           <div className="flex justify-center items-center py-12">

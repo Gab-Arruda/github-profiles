@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import ProfileList from '../components/ProfileList'
+import OfflineModal from '../components/OfflineModal'
 
 export default function Search() {
   const { username } = useParams()
@@ -8,10 +9,15 @@ export default function Search() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(1)
+  const [isOffline, setIsOffline] = useState(false)
   const itemsPerPage = 5
 
   useEffect(() => {
     const fetchResults = async () => {
+      if (!window.navigator.onLine) {
+        setIsOffline(true);
+        return;
+      }
       setLoading(true)
       setError(null)
       try {
@@ -25,9 +31,14 @@ export default function Search() {
         
         const data = await response.json()
         setResults(data)
+        setIsOffline(false);
       } catch (err) {
-        console.error('Erro ao buscar usuários:', err)
-        setError('Erro ao buscar usuários. Tente novamente.')
+        if (!window.navigator.onLine || err.name === 'TypeError') {
+          setIsOffline(true);
+        } else {
+          setError('Erro ao buscar usuários. Tente novamente.');
+        }
+        console.error(err);
       } finally {
         setLoading(false)
       }
@@ -52,6 +63,7 @@ export default function Search() {
 
   return (
     <main className="px-6 py-6">
+      <OfflineModal isOpen={isOffline} onClose={() => setIsOffline(false)} />
       <div>
         <h3 className="text-3xl font-bold mb-6">Resultados para: {username}</h3>
         

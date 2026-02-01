@@ -16,6 +16,16 @@ export default function Profile() {
       setLoading(true);
       setError(null);
       try {
+        const savedProfiles = JSON.parse(localStorage.getItem('offlineProfiles') || '[]');
+        const savedProfileData = savedProfiles.find(profile => profile.login === username);
+
+        if (savedProfileData && savedProfileData.repositories) {
+          setUserData(savedProfileData);
+          setReposData(savedProfileData.repositories);
+          setLoading(false);
+          return;
+        }
+
         const userResponse = await fetch(`https://api.github.com/users/${username}`);
         if (!userResponse.ok) {
           throw new Error('Usuário não encontrado');
@@ -39,6 +49,35 @@ export default function Profile() {
 
     fetchProfile();
   }, [username]);
+
+  useEffect(() => {
+    if (userData) {
+      const savedProfiles = JSON.parse(localStorage.getItem('offlineProfiles') || '[]');
+      
+      const existingIndex = savedProfiles.findIndex(profile => profile.login === userData.login);
+      
+      const profileToSave = {
+        login: userData.login,
+        avatar_url: userData.avatar_url,
+        name: userData.name,
+        bio: userData.bio,
+        followers: userData.followers,
+        following: userData.following,
+        public_repos: userData.public_repos,
+        location: userData.location,
+        viewedAt: new Date().toISOString(),
+        repositories: reposData
+      };
+      
+      if (existingIndex === -1) {
+        savedProfiles.unshift(profileToSave);
+      } else {
+        savedProfiles[existingIndex] = profileToSave;
+      }
+      
+      localStorage.setItem('offlineProfiles', JSON.stringify(savedProfiles));
+    }
+  }, [userData, reposData]);
 
   const totalStars = reposData.reduce((acc, repo) => acc + repo.stargazers_count, 0);
 

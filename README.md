@@ -14,30 +14,43 @@ Este projeto implementa uma aplicação frontend em React para buscar e exibir p
 - Ao ver um perfil novamente, os dados salvos são exibidos. Porém o usuário é alertado disso por um campo informando a data de visualização e oferendo a opção de buscar os dados mais recentes.
 - Ao realizar requests para o GitHub, seja na listagem de perfis ou na página de exibição de perfil, caso a conexão com a internet seja perdida, um modal é exibido informando a situação ao usuário. Ele então a opção de continuar na página atual ou ir para a página de Perfis Visualizados.
 
-### Comentários sobre a implementação
+## Comentários sobre a Implementação
 
-- A aplicação foi construída de maneira responsiva, possui suporte a mobile.
-- Componentes foram criados para permitir uma maior modularidade do sistema, bem como o reuso.
-- Foi utilizado o framework CSS `Tailwind`, para agilizar o desenvolvimento e facilitar a responsividade.
-- Testes foram feitos e se encontram na pasta `/tests`.
-- Este projeto utiliza lazy loading para carregamento de páginas somente quando necessário.
-- O localstorage foi utilizado para salvar/atualizar os perfis visualizados, permitindo sua visualização de maneira offline.
+- A aplicação foi construída de maneira responsiva, com suporte a mobile.
+- Componentes criados para maior modularidade e reuso.
+- Utilização do framework CSS **Tailwind** para agilizar o desenvolvimento e facilitar a responsividade.
+- Testes realizados, disponíveis na pasta `/tests`.
+- Implementação de lazy loading para carregamento de páginas somente quando necessário.
+- Uso do localstorage para salvar/atualizar os perfis visualizados, permitindo visualização offline.
 
-### Como rodar o projeto
+## Como Rodar o Projeto
 
-Pré requisitos
+### Pré-requisitos
 
-- Node instalado.
+- **Node** instalado.
 
-#### Executar a aplicação
+### Executar a Aplicação
 
 No diretório raiz do projeto:
 
-- Instale as dependências: `npm install`.
-- Inicie o servidor: `npm run dev`.
-- Parar rodar os testes: `npm test`.
+1. Instale as dependências: 
+   ```bash
+   npm install
+   ```
+2. Inicie o servidor: 
+   ```bash
+   npm run dev
+   ```
+3. Para rodar os testes: 
+   ```bash
+   npm test
+   ```
 
-### Estrutura do Projeto
+## Hospedagem
+
+A aplicação está disponível em: [https://main.d3pu1bnxzi455w.amplifyapp.com/](https://main.d3pu1bnxzi455w.amplifyapp.com/)
+
+## Estrutura do Projeto
 
 ```
 github-profiles/
